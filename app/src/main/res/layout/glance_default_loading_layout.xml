@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    小部件初始占位布局。
+    在 Glance 完成第一次 provideGlance 渲染之前，系统显示此布局作为占位。
+    AppWidgetProvider 的 meta-data 中通过 android:initialLayout 引用此文件。
+    布局尽量简单，避免不必要的渲染开销。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF6200EE">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="加载中…"
+        android:textColor="#FFFFFFFF"
+        android:textSize="14sp" />
+
+</FrameLayout>

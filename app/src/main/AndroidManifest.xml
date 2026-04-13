@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".GlanceApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+
+        <!-- ── 主界面 Activity ────────────────────────────────────────────────── -->
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            ── Glance AppWidget Receiver ─────────────────────────────────────────
+            这是系统与小部件通信的入口。
+            - android:name 指向我们的 GlanceAppWidgetReceiver 子类
+            - BIND_APPWIDGET 权限由系统授予，不需要在此手动声明
+            - meta-data 的 android:resource 指向小部件配置 XML，
+              告诉系统小部件的默认尺寸、更新频率等信息
+        -->
+        <receiver
+            android:name=".widget.CustomGlanceWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <!-- 监听系统发出的小部件更新广播 -->
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/custom_widget_info" />
+        </receiver>
+
+    </application>
+
+</manifest>

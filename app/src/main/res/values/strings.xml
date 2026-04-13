@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">自定义小部件</string>
+    <string name="widget_label">自定义小部件</string>
+    <string name="widget_description">可在应用内自由配置的桌面小部件</string>
+
+    <!-- 列表界面 -->
+    <string name="list_title">我的小部件</string>
+    <string name="list_empty">还没有小部件\n点击 + 创建第一个</string>
+    <string name="fab_create">创建小部件</string>
+    <string name="delete_confirm_title">删除小部件</string>
+    <string name="delete_confirm_message">确定要删除"%s"吗？已添加到桌面的小部件将显示错误提示。</string>
+    <string name="delete_confirm_ok">删除</string>
+    <string name="delete_confirm_cancel">取消</string>
+
+    <!-- 编辑界面 -->
+    <string name="editor_title_new">新建小部件</string>
+    <string name="editor_title_edit">编辑小部件</string>
+    <string name="editor_field_name">小部件名称（必填）</string>
+    <string name="editor_field_title">标题（可选）</string>
+    <string name="editor_field_content">内容文字（可选）</string>
+    <string name="editor_section_bg_color">背景颜色</string>
+    <string name="editor_section_text_color">文字颜色</string>
+    <string name="editor_section_text_size">字号：%d sp</string>
+    <string name="editor_section_corner">圆角：%d dp</string>
+    <string name="editor_btn_save">保存</string>
+    <string name="editor_hint_desktop">提示：保存后，从桌面长按空白处 → 小部件 → 自定义小部件，即可添加到桌面</string>
+    <string name="editor_name_empty_error">名称不能为空</string>
+
+    <!-- Glance 小部件内 -->
+    <string name="widget_unconfigured_title">尚未配置</string>
+    <string name="widget_unconfigured_content">点击此处打开应用配置小部件</string>
+    <string name="widget_config_deleted">配置已删除，点击重新配置</string>
+</resources>

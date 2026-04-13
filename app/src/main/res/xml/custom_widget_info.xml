@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AppWidget Provider 信息文件
+    系统通过此文件了解小部件的基础属性：
+    - minWidth / minHeight：小部件在桌面上占据的最小尺寸（以 dp 计）
+      Android 桌面格子通常每格约 70dp，4×2 = 约 250×110dp
+    - targetCellWidth / targetCellHeight（API 31+）：目标格子数
+    - updatePeriodMillis：系统主动更新的间隔，0 表示不自动更新（我们手动调用 update）
+    - resizeMode：用户能否手动拖拽改变小部件大小
+    - widgetCategory：只允许放在桌面（home_screen）
+    - initialLayout：小部件首次加载时显示的占位布局，由 Glance 提供默认值
+-->
+<appwidget-provider
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:description="@string/widget_description"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:initialLayout="@layout/glance_default_loading_layout" />
