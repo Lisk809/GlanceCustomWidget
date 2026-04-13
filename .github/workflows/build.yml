@@ -14,6 +14,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ── 关键说明：为什么用 gradle/actions/setup-gradle 而不是 actions/cache ───────
+#
+# 旧方案（手动 cache + chmod + ./gradlew）的问题：
+#   - 需要 gradle-wrapper.jar 已提交到仓库，否则 gradlew 无法下载正确的 Gradle 版本
+#   - 回退到系统 Gradle（ubuntu-latest 自带 8.4），与 AGP 8.5 要求的 8.7 不匹配
+#
+# 新方案（gradle/actions/setup-gradle@v3）的优势：
+#   - 直接读取 gradle-wrapper.properties 中的 distributionUrl
+#   - 自动下载并缓存指定版本的 Gradle（即使 wrapper.jar 不在仓库中）
+#   - 内置 Build Scan、dependency graph 等功能
+#   - 官方维护，缓存命中率更高
+# ─────────────────────────────────────────────────────────────────────────────
+
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
   # Job 1: lint — 静态分析，快速失败
@@ -30,26 +43,25 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: "17"
-          distribution: "temurin"    # Eclipse Temurin，免费且稳定
+          distribution: "temurin"
 
-      - name: 缓存 Gradle 依赖
-        uses: actions/cache@v4
+      # gradle/actions/setup-gradle 替代了旧的三步操作：
+      #   actions/cache + chmod +x gradlew + ./gradlew
+      # 它会：
+      #   1. 读取 gradle/wrapper/gradle-wrapper.properties
+      #   2. 下载 distributionUrl 指定的 Gradle 版本（此处为 8.7）
+      #   3. 缓存 ~/.gradle（跨 Job、跨 workflow run 共享）
+      #   4. 自动处理 gradlew 的可执行权限
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-
-      - name: 授予 gradlew 执行权限
-        run: chmod +x gradlew
+          gradle-version: wrapper    # 使用 wrapper 文件中指定的版本，不要写死版本号
 
       - name: 运行 Lint
         run: ./gradlew lintDebug --stacktrace
 
       - name: 上传 Lint 报告
-        if: always()    # 即使 lint 失败也上传报告，方便查看
+        if: always()    # 即使 lint 失败也上传，方便查看错误
         uses: actions/upload-artifact@v4
         with:
           name: lint-report
@@ -57,12 +69,12 @@ jobs:
           retention-days: 7
 
   # ════════════════════════════════════════════════════════════════════════════
-  # Job 2: build-debug — Debug APK 构建（PR 和普通推送）
+  # Job 2: build-debug — Debug APK 构建
   # ════════════════════════════════════════════════════════════════════════════
   build-debug:
     name: Build Debug APK
     runs-on: ubuntu-latest
-    needs: lint          # lint 通过后才构建
+    needs: lint
 
     steps:
       - name: Checkout 代码
@@ -74,18 +86,10 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: 缓存 Gradle 依赖
-        uses: actions/cache@v4
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-
-      - name: 授予 gradlew 执行权限
-        run: chmod +x gradlew
+          gradle-version: wrapper
 
       - name: 构建 Debug APK
         run: ./gradlew assembleDebug --stacktrace
@@ -95,12 +99,13 @@ jobs:
         with:
           name: app-debug-${{ github.sha }}
           path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14    # 保留 14 天
+          retention-days: 14
 
   # ════════════════════════════════════════════════════════════════════════════
-  # Job 3: build-release — Release APK，仅在推送 tag 时触发
-  #   需要在仓库 Settings → Secrets 中配置签名相关的 Secrets：
-  #     KEYSTORE_BASE64   : base64 编码的 .jks 文件内容
+  # Job 3: build-release — 签名 Release APK，仅推送 tag 时触发
+  #
+  #   前置准备：在仓库 Settings → Secrets and variables → Actions 添加：
+  #     KEYSTORE_BASE64   : base64 编码的 .jks 文件（见 keystore.properties.template）
   #     KEYSTORE_PASSWORD : keystore 密码
   #     KEY_ALIAS         : key alias
   #     KEY_PASSWORD      : key 密码
@@ -109,7 +114,7 @@ jobs:
     name: Build & Sign Release APK
     runs-on: ubuntu-latest
     needs: lint
-    if: startsWith(github.ref, 'refs/tags/v')   # 只在 tag 推送时运行
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout 代码
@@ -121,27 +126,20 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: 缓存 Gradle 依赖
-        uses: actions/cache@v4
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+          gradle-version: wrapper
 
-      - name: 授予 gradlew 执行权限
-        run: chmod +x gradlew
-
-      # 将 base64 编码的 keystore 还原为文件
-      # 生成方式：base64 -i your.jks | pbcopy  然后存入 Secret
+      # base64 → .jks 文件
+      # 生成 KEYSTORE_BASE64 的命令：
+      #   macOS:  base64 -i release.jks | pbcopy
+      #   Linux:  base64 release.jks
       - name: 还原签名 Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/app/release.jks
 
-      # 构建并签名 Release APK
-      # 签名参数通过环境变量传入 Gradle，避免明文出现在日志中
+      # 签名参数通过环境变量传入，不会出现在 runner 日志中
       - name: 构建并签名 Release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -155,12 +153,11 @@ jobs:
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
             --stacktrace
 
-      # 提取版本号（去掉 tag 前缀 "v"），用于文件命名
+      # tag 形如 v1.2.3，去掉前缀 "v" 得到版本号
       - name: 提取版本号
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      # 重命名 APK，包含版本号，方便识别
       - name: 重命名 Release APK
         run: |
           mv app/build/outputs/apk/release/app-release.apk \
@@ -173,18 +170,17 @@ jobs:
           path: app/build/outputs/apk/release/GlanceCustomWidget-*.apk
           retention-days: 90
 
-      # 自动创建 GitHub Release 并附上 APK
+      # 自动创建 GitHub Release，附上 APK，从 commit 历史自动生成 changelog
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/release/GlanceCustomWidget-*.apk
-          generate_release_notes: true    # 自动从 commit 历史生成 changelog
+          generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}  # v1.0.0-beta → prerelease
+          prerelease: ${{ contains(github.ref_name, '-') }}   # v1.0.0-beta → prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 安全清理：删除磁盘上的 keystore，防止残留
       - name: 清理 Keystore 文件
-        if: always()
-        run: rm -f app/release.jks
+        if: always()    # 无论成功失败都清理
+        run: rm -f $GITHUB_WORKSPACE/app/release.jks

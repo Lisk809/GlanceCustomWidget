@@ -1,11 +1,9 @@
 name: Dependency Check
 
-# 每周一早上 9:00（UTC+8）自动检查依赖更新
-# 也可手动触发
 on:
   schedule:
-    - cron: "0 1 * * 1"   # UTC 01:00 = 北京时间 09:00，每周一
-  workflow_dispatch:        # 允许手动触发
+    - cron: "0 1 * * 1"   # 每周一 09:00 北京时间
+  workflow_dispatch:
 
 jobs:
   dependency-updates:
@@ -22,22 +20,14 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: 缓存 Gradle 依赖
-        uses: actions/cache@v4
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          gradle-version: wrapper
 
-      - name: 授予 gradlew 执行权限
-        run: chmod +x gradlew
-
-      # 使用 Gradle 内置的 dependencyUpdates 任务检查可更新的依赖
-      # 需要在 build.gradle.kts 中应用 com.github.ben-manes.versions 插件（已在项目级配置）
       - name: 检查依赖更新
         run: ./gradlew dependencyUpdates -Drevision=release --stacktrace
-        continue-on-error: true   # 有更新时不算失败
+        continue-on-error: true
 
       - name: 上传依赖报告
         uses: actions/upload-artifact@v4
