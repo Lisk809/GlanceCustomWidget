@@ -96,7 +96,14 @@ object WidgetConfigManager {
     /**
      * 强制刷新所有小部件（例如删除配置后，让已删除配置的小部件显示错误提示）
      */
+    /**
+ * 强制刷新所有小部件（例如删除配置后，让已删除配置的小部件显示错误提示）
+ */
     suspend fun updateAllGlanceWidgets(context: Context) {
-        CustomGlanceWidget().updateAll(context)
+       val manager = GlanceAppWidgetManager(context)
+       val allGlanceIds = manager.getGlanceIds(CustomGlanceWidget::class.java)
+       allGlanceIds.forEach { glanceId ->
+           CustomGlanceWidget().update(context, glanceId)
     }
+}
 }
