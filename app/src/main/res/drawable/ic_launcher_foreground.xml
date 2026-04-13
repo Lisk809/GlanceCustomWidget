@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    自适应图标的前景层（矢量图）。
+    尺寸固定为 108x108dp，其中只有中央 72x72dp 区域在所有形状 mask 下都可见，
+    因此核心内容（字母"W"）绘制在中央区域内。
+    外侧 18dp 的 padding 区域（"safe zone" 以外）可能被系统 mask 裁掉。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 白色圆形背景（在前景层内，作为图标的视觉基底） -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,54m-38,0a38,38 0 1,0 76,0a38,38 0 1,0 -76,0" />
+
+    <!-- 字母 "W" —— 使用粗线条路径，颜色使用品牌紫色 -->
+    <path
+        android:fillColor="#FF6200EE"
+        android:strokeWidth="0"
+        android:pathData="
+            M30,34 L38,34 L44,58 L50,42 L58,42 L64,58 L70,34 L78,34
+            L68,74 L60,74 L54,56 L48,74 L40,74 Z" />
+
+</vector>
